@@ -231,6 +231,7 @@ static void togglefullscreen(Client *c, const Arg *a);
 static void togglecookiepolicy(Client *c, const Arg *a);
 static void toggleinspector(Client *c, const Arg *a);
 static void find(Client *c, const Arg *a);
+static void playexternal(Client *c, const Arg *a);
 
 /* Buttons */
 static void clicknavigate(Client *c, const Arg *a, WebKitHitTestResult *h);
@@ -1256,12 +1257,13 @@ createview(WebKitWebView *v, WebKitNavigationAction *a, Client *c)
 	switch (webkit_navigation_action_get_navigation_type(a)) {
 	case WEBKIT_NAVIGATION_TYPE_OTHER: /* fallthrough */
 		/*
-		 * popup windows of type “other” are almost always triggered
-		 * by user gesture, so inverse the logic here
+		 * allow same-window popup triggered by user gesture
 		 */
-/* instead of this, compare destination uri to mouse-over uri for validating window */
-		if (webkit_navigation_action_is_user_gesture(a))
+		if (webkit_navigation_action_is_user_gesture(a)) {
+			Arg aa = {.v = webkit_uri_request_get_uri(webkit_navigation_action_get_request(a))};
+			loaduri((Client *) c, &aa);
 			return NULL;
+		}
 	case WEBKIT_NAVIGATION_TYPE_LINK_CLICKED: /* fallthrough */
 	case WEBKIT_NAVIGATION_TYPE_FORM_SUBMITTED: /* fallthrough */
 	case WEBKIT_NAVIGATION_TYPE_BACK_FORWARD: /* fallthrough */
@@ -1968,6 +1970,15 @@ clickexternplayer(Client *c, const Arg *a, WebKitHitTestResult *h)
 	Arg arg;
 
 	arg = (Arg)VIDEOPLAY(webkit_hit_test_result_get_media_uri(h));
+	spawn(c, &arg);
+}
+
+void
+playexternal(Client *c, const Arg *a)
+{
+	Arg arg;
+
+	arg = (Arg)VIDEOPLAY(geturi(c));
 	spawn(c, &arg);
 }
 
